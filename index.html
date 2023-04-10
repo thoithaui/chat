@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Box</title>
+    <style>
+        #messages {
+            border: 1px solid black;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        select,
+        #message {
+            margin-bottom: 5px;
+        }
+
+        #message {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>STP CHAT</h2>
+    <select id="selectDate"></select>
+    <div id="messages"></div>
+    <form id="message-form">
+        <select id="user">
+            <option value="MS. Quyen">Ms. Quyen</option>
+            <option value="Dai">Dai</option>
+            <option value="Vuong">Vuong</option>
+            <option value="Tho">Tho</option>
+        </select>
+        <div>
+            <!-- <input type="text" id="message" placeholder="Enter your message" required /> -->
+            <textarea id="message" name="description" rows="4" cols="50" placeholder="Enter your message"
+                required></textarea>
+        </div>
+        <button type="submit">Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const messages = document.getElementById('messages');
+        const messageForm = document.getElementById('message-form');
+        const user = document.getElementById('user');
+        const message = document.getElementById('message');
+        const select = document.getElementById('selectDate');
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('chatHistory', (chatHistory) => {
+            chatHistory.forEach((message) => {
+                const messageElement = document.createElement('div');
+                messageElement.innerText = `[${message.time}] ${message.user}: ${message.message}`;
+                messages.appendChild(messageElement);
+            });
+        });
+        socket.on('dateList', (dateList) => {
+            dateList.forEach((date) => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.text = date;
+                select.add(option);
+            });
+        });
+
+        messageForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const now = new Date();
+            const date = `${now.getDate()}/${now.getMonth()}`;
+            const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            const messageData = {
+                user: user.value,
+                message: message.value,
+                time: time,
+                date: date,
+            };
+            socket.emit('newMessage', messageData);
+            message.value = '';
+        });
+
+        socket.on('newMessage', (message) => {
+            const messageElement = document.createElement('div');
+            messageElement.innerText = `[${message.time}] ${message.user}: ${message.message}`;
+            messages.appendChild(messageElement);
+        });
+
+    </script>
+</body>
+
+</html>
